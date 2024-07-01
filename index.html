@@ -564,6 +564,8 @@
         // Call the function to create buttons when the page loads
         createInstructionButtons();
         */
+
+        // Function to get the time to travel between two points
         async function getRouteDetails(startPoint, endPoint) {
             if (!startPoint || !endPoint) return null;
 
@@ -580,12 +582,11 @@
             const route = json.routes[0];
             return {
                 time: Math.floor(route.duration / 60),  // duration in minutes
-                distance: route.distance / 1000  // distance in kilometers
+                distance: (route.distance / 1000 * 0.621371)  // convert distance from km to miles
             };
         }
-
-
       
+        // Function to get the time to travel between two points
         async function updateChargingStationDetails() {
             // Extract startPoint and endPoint from the source data
             const startPoint = {
@@ -602,13 +603,13 @@
 
                 // Fetch origin to charging station details
                 const originToStation = await getRouteDetails(startPoint, stationPoint);
-                station.originDistance = `${originToStation.distance.toFixed(2)} km`;
-                station.originTime = `${originToStation.time} min`;
+                station.originDistance = `${originToStation.distance.toFixed(2)} Miles`;
+                station.originTime = `${originToStation.time} Minutes`;
 
                 // Fetch charging station to destination details
                 const stationToDest = await getRouteDetails(stationPoint, endPoint);
-                station.destDistance = `${stationToDest.distance.toFixed(2)} km`;
-                station.destTime = `${stationToDest.time} min`;
+                station.destDistance = `${stationToDest.distance.toFixed(2)} Miles`;
+                station.destTime = `${stationToDest.time} Minutes`;
 
                 console.log(`Updated station ${station.name} with distance ${station.originDistance} and ${station.destDistance}`);
             }
