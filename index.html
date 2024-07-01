@@ -565,17 +565,46 @@
         createInstructionButtons();
         */
 
-        // Function to fetch and display the time between two points
-        async function getTime(startPoint, endPoint) {
-            if (!startPoint || !endPoint) return;
+                async function getRouteDetails(startPoint, endPoint) {
+            if (!startPoint || !endPoint) return null;
 
             const query = await fetch(
                 `https://api.mapbox.com/directions/v5/mapbox/driving/${startPoint.lng},${startPoint.lat};${endPoint.lng},${endPoint.lat}?steps=true&geometries=geojson&access_token=${mapboxgl.accessToken}`,
                 { method: 'GET' }
             );
             const json = await query.json();
-            const data = json.routes[0];
-            return Math.floor(data.duration / 60);
+            const route = json.routes[0];
+            return {
+                time: Math.floor(route.duration / 60),  // duration in minutes
+                distance: route.distance / 1000  // distance in kilometers
+            };
+        }
+
+      
+        async function updateChargingStationDetails() {
+            // Extract startPoint and endPoint from the source data
+            const startPoint = {
+                lng: pointSource.data.features[0].geometry.coordinates[0],
+                lat: pointSource.data.features[0].geometry.coordinates[1]
+            };
+            const endPoint = {
+                lng: endpointsource.data.features[0].geometry.coordinates[0],
+                lat: endpointsource.data.features[0].geometry.coordinates[1]
+            };
+
+            for (const station of chargingStations) {
+                const stationPoint = { lat: station.coordinates[1], lng: station.coordinates[0] };
+
+                // Fetch origin to charging station details
+                const originToStation = await getRouteDetails(startPoint, stationPoint);
+                station.originDistance = `${originToStation.distance.toFixed(2)} km`;
+                station.originTime = `${originToStation.time} min`;
+
+                // Fetch charging station to destination details
+                const stationToDest = await getRouteDetails(stationPoint, endPoint);
+                station.destDistance = `${stationToDest.distance.toFixed(2)} km`;
+                station.destTime = `${stationToDest.time} min`;
+            }
         }
 
         // Function to add points of interest (POIs) to the map
@@ -654,6 +683,8 @@
 
         // Add event listeners to the map after it has loaded
         map.on('load', () => {
+            updateChargingStationDetails();
+
             // Event listener for map clicks
             map.on('click', (event) => {
                 const clickCoords = [event.lngLat.lng, event.lngLat.lat];
