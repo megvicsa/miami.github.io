@@ -564,8 +564,7 @@
         // Call the function to create buttons when the page loads
         createInstructionButtons();
         */
-
-                async function getRouteDetails(startPoint, endPoint) {
+        async function getRouteDetails(startPoint, endPoint) {
             if (!startPoint || !endPoint) return null;
 
             const query = await fetch(
@@ -573,12 +572,18 @@
                 { method: 'GET' }
             );
             const json = await query.json();
+            console.log(json); // Log the full response to inspect it
+            if (!json.routes || json.routes.length === 0) {
+                console.error('No route data available');
+                return { time: 0, distance: 0 }; // Return default values in case of no route data
+            }
             const route = json.routes[0];
             return {
                 time: Math.floor(route.duration / 60),  // duration in minutes
                 distance: route.distance / 1000  // distance in kilometers
             };
         }
+
 
       
         async function updateChargingStationDetails() {
@@ -604,7 +609,10 @@
                 const stationToDest = await getRouteDetails(stationPoint, endPoint);
                 station.destDistance = `${stationToDest.distance.toFixed(2)} km`;
                 station.destTime = `${stationToDest.time} min`;
+
+                console.log(`Updated station ${station.name} with distance ${station.originDistance} and ${station.destDistance}`);
             }
+
         }
 
         // Function to add points of interest (POIs) to the map
@@ -681,9 +689,13 @@
             }
         };
 
+        map.on('load', async () => {
+            await updateChargingStationDetails();  // Ensure this is awaited properly
+            addChargingStations();  // You might need to re-add stations to reflect updated data
+        });
+
         // Add event listeners to the map after it has loaded
         map.on('load', () => {
-            updateChargingStationDetails();
 
             // Event listener for map clicks
             map.on('click', (event) => {
